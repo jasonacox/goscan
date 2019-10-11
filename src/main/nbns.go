@@ -16,7 +16,7 @@ import (
 func listenNBNS(ctx context.Context) {
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("pcap打开失败:", err)
+        log.Fatal("Pcap open failed:", err)
     }
     defer handle.Close()
     handle.SetBPFFilter("udp and port 137 and dst host " + ipNet.IP.String())
@@ -29,14 +29,14 @@ func listenNBNS(ctx context.Context) {
             if len(p.Layers()) == 4 {
                 c := p.Layers()[3].LayerContents()
                 if len(c) > 8 && c[2] == 0x84 && c[3] == 0x00 && c[6] == 0x00 && c[7] == 0x01{
-                    // 从网络层(ipv4)拿IP, 不考虑IPv6
+                    // Take IP from the network layer (ipv4), regardless of IPv6
                     i := p.Layer(layers.LayerTypeIPv4)
                     if i == nil {
                         continue
                     }
                     ipv4 := i.(*layers.IPv4)
                     ip := ipv4.SrcIP.String()
-                    // 把 hostname 存入到数据库
+                    // Save hostname to the database
                     m := ParseNBNS(c)
                     if len(m) > 0 {
                         pushData(ip, nil, m, "")
@@ -48,18 +48,18 @@ func listenNBNS(ctx context.Context) {
 }
 
 
-// 根据ip生成含mdns请求包，包存储在 buffer里
+// IP generate mdns request package, the package is stored in buffer
 func nbns(buffer *Buffer) {
     rand.Seed(time.Now().UnixNano())
     tid := rand.Intn(0x7fff)
     b := buffer.PrependBytes(12)
-    binary.BigEndian.PutUint16(b, uint16(tid)) // 0x0000 标识
-    binary.BigEndian.PutUint16(b[2:], uint16(0x0010)) // 标识
-    binary.BigEndian.PutUint16(b[4:], uint16(1)) // 问题数
-    binary.BigEndian.PutUint16(b[6:], uint16(0)) // 资源数
-    binary.BigEndian.PutUint16(b[8:], uint16(0)) // 授权资源记录数
-    binary.BigEndian.PutUint16(b[10:], uint16(0)) // 额外资源记录数
-    // 查询问题
+    binary.BigEndian.PutUint16(b, uint16(tid)) // 0x0000 Identification
+    binary.BigEndian.PutUint16(b[2:], uint16(0x0010)) // Identification
+    binary.BigEndian.PutUint16(b[4:], uint16(1)) // Number of Requests
+    binary.BigEndian.PutUint16(b[6:], uint16(0)) // Number of Resources
+    binary.BigEndian.PutUint16(b[8:], uint16(0)) // Authorized resource records
+    binary.BigEndian.PutUint16(b[10:], uint16(0)) // Additional resource records
+    // Query the problem
     b = buffer.PrependBytes(1)
     b[0] = 0x20
     b = buffer.PrependBytes(32)
@@ -71,7 +71,7 @@ func nbns(buffer *Buffer) {
     b = buffer.PrependBytes(1)
     // terminator
     b[0] = 0
-    // type 和 classIn
+    // type and classIn
     b = buffer.PrependBytes(4)
     binary.BigEndian.PutUint16(b, uint16(33))
     binary.BigEndian.PutUint16(b[2:], 1)
@@ -105,23 +105,23 @@ func sendNbns(ip IP, mhaddr net.HardwareAddr) {
     udp.Payload = udpPayload
     buffer := gopacket.NewSerializeBuffer()
     opt := gopacket.SerializeOptions{
-        FixLengths: true,       // 自动计算长度
-        ComputeChecksums: true, // 自动计算checksum
+        FixLengths: true,       // Automatic calculation of length
+        ComputeChecksums: true, // Automatically calculate checksum
     }
     err := gopacket.SerializeLayers(buffer, opt, ether, ip4, udp, gopacket.Payload(udpPayload))
     if err != nil {
-        log.Fatal("Serialize layers出现问题:", err)
+        log.Fatal("There is a problem with Serialize layers:", err)
     }
     outgoingPacket := buffer.Bytes()
     
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("pcap打开失败:", err)
+        log.Fatal("Pcap open failed:", err)
     }
     defer handle.Close()
     err = handle.WritePacketData(outgoingPacket)
     if err != nil {
-        log.Fatal("发送udp数据包失败..")
+        log.Fatal("Failed to send udp packet.")
     }
 }
 
@@ -133,12 +133,12 @@ func ParseNBNS(data []byte) string {
         return ""
     }
     index := i + 1 + 0x20 + 12
-    // data[index-1]是在 number of names 的索引上，如果number of names 为0，退出
+    // Data[index-1] is on the index of number of names, if number of names is 0, exit
     if data[index-1] == 0x00 {
         return ""
     }
     for t:= index; ; t++ {
-        // 0x20 和 0x00 是终止符
+        // 0x20 and 0x00 are terminators
         if data[t] == 0x20 || data[t] == 0x00 {
             break
         }

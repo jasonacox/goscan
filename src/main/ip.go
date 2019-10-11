@@ -10,7 +10,7 @@ import (
 
 type IP uint32
 
-// 将 IP(uint32) 转换成 可读性IP字符串
+// Convert IP(uint32) to a readable IP string
 func (ip IP) String() string {
     var bf bytes.Buffer
     for i := 1; i <= 4; i++ {
@@ -22,10 +22,10 @@ func (ip IP) String() string {
     return bf.String()
 }
 
-// 根据IP和mask换算内网IP范围
+// Table -- Convert intranet IP range based on IP and mask
 func Table(ipNet *net.IPNet) []IP {
     ip := ipNet.IP.To4()
-    log.Info("本机ip:", ip)
+    log.Info("Native ip", ip)
     var min, max IP
     var data []IP
     for i := 0; i < 4; i++ {
@@ -34,9 +34,9 @@ func Table(ipNet *net.IPNet) []IP {
     }
     one, _ := ipNet.Mask.Size()
     max = min | IP(math.Pow(2, float64(32 - one)) - 1)
-    log.Infof("内网IP范围:%s --- %s", min, max)
-    // max 是广播地址，忽略
-    // i & 0x000000ff  == 0 是尾段为0的IP，根据RFC的规定，忽略
+    log.Infof("Intranet IP range:%s --- %s", min, max)
+    // max is the broadcast address, ignored
+    // i & 0x000000ff == 0 if the IP with a trailing segment of 0, ignored according to the RFC rules.
     for i := min; i < max; i++ {
         if i & 0x000000ff == 0 {
             continue
@@ -46,12 +46,12 @@ func Table(ipNet *net.IPNet) []IP {
     return data
 }
 
-// []byte --> IP
+// ParseIP -- []byte --> IP
 func ParseIP(b []byte) IP {
     return IP(IP(b[0]) << 24 + IP(b[1]) << 16 + IP(b[2]) << 8 + IP(b[3]))
 }
 
-// string --> IP
+// ParseIPString -- string --> IP
 func ParseIPString(s string) IP{
     var b []byte
     for _, i := range strings.Split(s, ".") {
@@ -61,7 +61,7 @@ func ParseIPString(s string) IP{
     return ParseIP(b)
 }
 
-// IPSlice ，实现了sort的排序接口
+// IPSlice -- implements the sort interface of sort
 type IPSlice []IP
 func (ip IPSlice) Len() int { return len(ip) }
 func (ip IPSlice) Swap(i, j int) {

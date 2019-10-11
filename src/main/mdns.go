@@ -16,7 +16,7 @@ import (
 func listenMDNS(ctx context.Context) {
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("pcap打开失败:", err)
+        log.Fatal("Pcap open failed:", err)
     }
     defer handle.Close()
     handle.SetBPFFilter("udp and port 5353")
@@ -29,14 +29,14 @@ func listenMDNS(ctx context.Context) {
             if len(p.Layers()) == 4 {
                 c := p.Layers()[3].LayerContents()
                 if c[2] == 0x84 && c[3] == 0x00 && c[6] == 0x00 && c[7] == 0x01{
-                    // 从网络层(ipv4)拿IP, 不考虑IPv6
+                    // Take IP from the network layer (ipv4), regardless of IPv6
                     i := p.Layer(layers.LayerTypeIPv4)
                     if i == nil {
                         continue
                     }
                     ipv4 := i.(*layers.IPv4)
                     ip := ipv4.SrcIP.String()
-                    // 把 hostname 存入到数据库
+                    // Save hostname to the database
                     h := ParseMdns(c)
                     if len(h) > 0 {
                         pushData(ip, nil, h, "")
@@ -47,16 +47,16 @@ func listenMDNS(ctx context.Context) {
     }
 }
 
-// 根据ip生成含mdns请求包，包存储在 buffer里
+// IP generate mdns request package, the package is stored in buffer
 func mdns(buffer *Buffer, ip string) {
     b := buffer.PrependBytes(12)
-    binary.BigEndian.PutUint16(b, uint16(0)) // 0x0000 标识
-    binary.BigEndian.PutUint16(b[2:], uint16(0x0100)) // 标识
-    binary.BigEndian.PutUint16(b[4:], uint16(1)) // 问题数
-    binary.BigEndian.PutUint16(b[6:], uint16(0)) // 资源数
-    binary.BigEndian.PutUint16(b[8:], uint16(0)) // 授权资源记录数
-    binary.BigEndian.PutUint16(b[10:], uint16(0)) // 额外资源记录数
-    // 查询问题
+    binary.BigEndian.PutUint16(b, uint16(0)) // 0x0000 Identification
+    binary.BigEndian.PutUint16(b[2:], uint16(0x0100)) // Identification
+    binary.BigEndian.PutUint16(b[4:], uint16(1)) // Number of requests
+    binary.BigEndian.PutUint16(b[6:], uint16(0)) // Number of resources
+    binary.BigEndian.PutUint16(b[8:], uint16(0)) // Authorized resource records
+    binary.BigEndian.PutUint16(b[10:], uint16(0)) // Additional resource records
+    // Query problem
     ipList := strings.Split(ip, ".")
     for j := len(ipList) - 1; j >= 0; j-- {
         ip := ipList[j]
@@ -67,15 +67,15 @@ func mdns(buffer *Buffer, ip string) {
         }
     }
     b = buffer.PrependBytes(8)
-    b[0] = 7 // 后续总字节
+    b[0] = 7 // Subsequent total bytes
     copy(b[1:], []byte{'i', 'n', '-', 'a', 'd', 'd', 'r'})
     b = buffer.PrependBytes(5)
-    b[0] = 4 // 后续总字节
+    b[0] = 4 // Subsequent total bytes
     copy(b[1:], []byte{'a', 'r', 'p', 'a'})
     b = buffer.PrependBytes(1)
     // terminator
     b[0] = 0
-    // type 和 classIn
+    // Type and classIn
     b = buffer.PrependBytes(4)
     binary.BigEndian.PutUint16(b, uint16(12))
     binary.BigEndian.PutUint16(b[2:], 1)
@@ -109,28 +109,28 @@ func sendMdns(ip IP, mhaddr net.HardwareAddr) {
     udp.Payload = udpPayload  // todo
     buffer := gopacket.NewSerializeBuffer()
     opt := gopacket.SerializeOptions{
-        FixLengths: true,       // 自动计算长度
-        ComputeChecksums: true, // 自动计算checksum
+        FixLengths: true,       // Automatic calculation of length
+        ComputeChecksums: true, // Automatically calculate checksum
     }
     err := gopacket.SerializeLayers(buffer, opt, ether, ip4, udp, gopacket.Payload(udpPayload))
     if err != nil {
-        log.Fatal("Serialize layers出现问题:", err)
+        log.Fatal("There is a problem with Serialize layers:", err)
     }
     outgoingPacket := buffer.Bytes()
     
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("pcap打开失败:", err)
+        log.Fatal("Pcap open failed:", err)
     }
     defer handle.Close()
     err = handle.WritePacketData(outgoingPacket)
     if err != nil {
-        log.Fatal("发送udp数据包失败..")
+        log.Fatal("Sending udp packet failed.")
     }
 }
 
-// 参数data  开头是 dns的协议头 0x0000 0x8400 0x0000 0x0001(ans) 0x0000 0x0000
-// 从 mdns响应报文中获取主机名
+// The parameter data starts with the protocol header of dns 0x0000 0x8400 0x0000 0x0001(ans) 0x0000 0x0000
+// Get the host name from the mdns response message
 func ParseMdns(data []byte) string {
     var buf bytes.Buffer
     i := bytes.Index(data, []byte{0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x00})
@@ -143,7 +143,7 @@ func ParseMdns(data []byte) string {
         if s - 2 < 0 {
             break
         }
-        // 包括 .local_ 7 个字符
+        // Includes .local_ 7 characters
         if bto16([]byte{data[s - 2], data[s - 1]}) == uint16(num + 7) {
             return Reverse(buf.String())
         }
@@ -155,7 +155,7 @@ func ParseMdns(data []byte) string {
 
 func bto16(b []byte) uint16 {
     if len(b) != 2 {
-        log.Fatal("b只能是2个字节")
+        log.Fatal("b can only be 2 bytes")
     }
     return uint16(b[0]) << 8 + uint16(b[1])
 }

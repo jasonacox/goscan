@@ -20,7 +20,7 @@ func NewBuffer() *Buffer {
     }
 }
 
-// 反转字符串
+// reverse the string
 func Reverse(s string) (result string) {
     for _, v := range s {
         result = string(v) + result
