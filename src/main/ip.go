@@ -25,7 +25,7 @@ func (ip IP) String() string {
 // Table -- Convert intranet IP range based on IP and mask
 func Table(ipNet *net.IPNet) []IP {
     ip := ipNet.IP.To4()
-    log.Info("Native ip", ip)
+    log.Info("Native IP: ", ip)
     var min, max IP
     var data []IP
     for i := 0; i < 4; i++ {
@@ -34,7 +34,7 @@ func Table(ipNet *net.IPNet) []IP {
     }
     one, _ := ipNet.Mask.Size()
     max = min | IP(math.Pow(2, float64(32 - one)) - 1)
-    log.Infof("Intranet IP range:%s --- %s", min, max)
+    log.Infof("Intranet IP range:%s --- %s: ", min, max)
     // max is the broadcast address, ignored
     // i & 0x000000ff == 0 if the IP with a trailing segment of 0, ignored according to the RFC rules.
     for i := min; i < max; i++ {

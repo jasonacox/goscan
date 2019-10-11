@@ -16,7 +16,7 @@ import (
 func listenNBNS(ctx context.Context) {
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("Pcap open failed:", err)
+        log.Fatal("Pcap open failed: ", err)
     }
     defer handle.Close()
     handle.SetBPFFilter("udp and port 137 and dst host " + ipNet.IP.String())
@@ -110,13 +110,13 @@ func sendNbns(ip IP, mhaddr net.HardwareAddr) {
     }
     err := gopacket.SerializeLayers(buffer, opt, ether, ip4, udp, gopacket.Payload(udpPayload))
     if err != nil {
-        log.Fatal("There is a problem with Serialize layers:", err)
+        log.Fatal("There is a problem with Serialize layers: ", err)
     }
     outgoingPacket := buffer.Bytes()
     
     handle, err := pcap.OpenLive(iface, 1024, false, 10 * time.Second)
     if err != nil {
-        log.Fatal("Pcap open failed:", err)
+        log.Fatal("Pcap open failed: ", err)
     }
     defer handle.Close()
     err = handle.WritePacketData(outgoingPacket)

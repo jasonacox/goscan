@@ -1,15 +1,6 @@
-# goscan
+# GoScan (Network Scanning Tool)
 
 ![image](https://user-images.githubusercontent.com/1621058/32154543-63c4e560-bcff-11e7-8a92-5281e18f221e.png)
-
-**特点：**
- * 扫描整个内网IPv4空间
- * 向整个内网发送ARP包
- * 显示IP/MAC地址/主机名/设备厂商名
- * 利用SMB(Windows)和mDNS(Mac OS)嗅探内网主机名(hostname)
- * 利用MAC地址计算设备的厂商信息
- 
- 更多细节可以查看 [用Go开发可以内网活跃主机嗅探器](https://github.com/timest/goscan/issues/1)
  
 **Features:**
  * Scan the whole IPv4 address space
@@ -20,24 +11,42 @@
  
 ### Usage: ###
 
-```sh
-# install dependencies
-$ go get github.com/Sirupsen/logrus
-$ go get github.com/timest/gomanuf
-$ go get github.com/google/gopacket
+# Option 1 - Run Build Script
 
-# build
-$ go build
+```sh
+$ ./build.sh
+Building goscan MacOS binary...
+Build complete...
+-rwxr-xr-x  1 coxj  staff   5.7M Oct 11 16:21 scan
 
 # execute
-$ sudo ./main  
+$ sudo ./scan  
 # or
-$ sudo ./main -I en0
+$ sudo ./scan -I en0
 ```
 
-Goscan must run as **root**.
+# Option 2 - Run Build Script for Docker
+```sh
+$ ./build-docker.sh 
+Building goscan Linux binary...
+Sending build context to Docker daemon  6.561MB
+Successfully built 7e1fcc9b28de
+Successfully tagged goscan:latest
+Build complete...
+-rwxr-xr-x  1 coxj  staff   4.7M Oct 11 16:31 scan
 
-Goscan work in Linux/Mac using [libpcap](http://www.tcpdump.org/) and on Windows with [WinPcap](https://www.winpcap.org/install/). 
+# execute
+$ sudo ./scan  
+# or
+$ sudo ./scan -I en0
+```
 
-If you need English comments, check this fork: https://github.com/skoky/goscan/tree/english 
+NOTE: Goscan must run as **root**.
+
+Goscan works on Linux/Mac using [libpcap](http://www.tcpdump.org/) and on Windows with [WinPcap](https://www.winpcap.org/install/). 
+
+# Credit
+
+Fork from https://github.com/timest/goscan
+
 
