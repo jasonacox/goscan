@@ -1,4 +1,4 @@
-module github.com/callicoder/go-docker
+module github.com/jasonacox/goscan
 
 go 1.13
 
